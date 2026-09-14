@@ -1,12 +1,15 @@
-name: Deploy DeepMT to GitHub Pages
+name: Deploy DeepMT redirect to GitHub Pages
+
+# The Pages site is ONLY a redirect to the current pinggy tunnel.
+# tunnel-rotate.sh rewrites pages-redirect/backend.json on every rotation —
+# each push redeploys in ~1 min, the public URL never changes.
 
 on:
   push:
     branches: [main]
     paths:
-      - 'client/**'
+      - 'pages-redirect/**'
       - '.github/workflows/pages.yml'
-      - 'client/public/backend.json'
   workflow_dispatch:
 
 permissions:
@@ -23,22 +26,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: client/package-lock.json
-      - run: npm ci
-        working-directory: client
-      - run: npm run build
-        working-directory: client
-      # SPA fallback for deep links (#/chat works without this, but direct
-      # asset 404s need it) + stop Jekyll from ignoring _assets.
-      - run: cp dist/index.html dist/404.html && touch dist/.nojekyll
-        working-directory: client
+      - run: cp index.html 404.html
+        working-directory: pages-redirect
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: client/dist
+          path: pages-redirect
 
   deploy:
     needs: build

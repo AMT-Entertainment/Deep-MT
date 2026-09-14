@@ -1,4 +1,4 @@
-{
+module.exports = {
   "apps": [
     {
       "name": "deepmt-server",
@@ -23,6 +23,16 @@
       "time": true
     },
     {
+      "name": "deepmt-tunnel",
+      "cwd": ".",
+      "script": "./tunnel-rotate.sh",
+      "interpreter": "bash",
+      "args": "daemon pinggy",
+      "autorestart": true,
+      "max_memory_restart": "256M",
+      "time": true
+    },
+    {
       "name": "deepmt-engine",
       "script": "bash",
       "args": "-c \"exec $HOME/turbo-fieldfare/.build/release/TurboFieldfareServer --model $HOME/turbo-fieldfare/scratch/gemma4.gturbo --port 8080 --max-context 16384\"",
@@ -32,4 +42,4 @@
       "enabled": false
     }
   ]
-}
+};

@@ -1,28 +1,30 @@
 #!/bin/bash
-# DeepMT tunnel rotator — keeps the free permanent GitHub Pages URL pointed
-# at this Mac Mini through whatever free tunnel is currently alive.
+# DeepMT tunnel rotator — the GitHub Pages site is ONLY a redirect to the
+# current pinggy tunnel. This script keeps that redirect pointed at the live
+# tunnel and renews it automatically.
 #
-#   ./tunnel-rotate.sh once [cloudflared|pinggy]  — start tunnel, update backend.json, push
-#   ./tunnel-rotate.sh daemon [provider]          — loop forever, renew every 23h (default)
-#   ./tunnel-rotate.sh set <https-url>            — manually point Pages at a URL
-#   ./tunnel-rotate.sh clear                      — point Pages back to same-origin (local only)
-#   ./tunnel-rotate.sh status                     — show current backend.json + tunnel state
+#   ./tunnel-rotate.sh once [pinggy|cloudflared] — start tunnel, update redirect, push
+#   ./tunnel-rotate.sh daemon [provider]          — loop forever, renew automatically
+#   ./tunnel-rotate.sh set <https-url>            — manually point redirect at a URL
+#   ./tunnel-rotate.sh clear                      — empty redirect target
+#   ./tunnel-rotate.sh stop                       — stop the tunnel
+#   ./tunnel-rotate.sh status                     — show redirect target + tunnel state
 #
 # How it works:
 #   1. Ensures the DeepMT server is up on :3000 (starts it if down).
-#   2. Opens a tunnel (cloudflared quick tunnel by default — free, no account).
-#   3. Writes the public URL into client/public/backend.json {"apiBase": "..."}.
-#   4. Commits + pushes to main → GitHub Pages rebuilds in ~1 min with the new backend.
-#   5. In daemon mode, kills + re-establishes the tunnel every 23h automatically.
+#   2. Opens a pinggy tunnel (free tier).
+#   3. Writes the public URL into pages-redirect/backend.json {"apiBase": "..."}.
+#   4. Commits + pushes to main → GitHub Pages rebuilds in ~1 min.
+#   5. In daemon mode, kills + re-establishes the tunnel automatically
+#      (pinggy free tunnels expire, so default renew is every 50 min).
 #
-# The Pages frontend (client/src/api.js) reads backend.json at startup and sends
-# all /api/* calls there, so https://<user>.github.io/<repo>/ stays permanent
-# while the tunnel URL underneath rotates.
+# https://amt-entertainment.github.io/Deep-MT/ only redirects to whatever URL
+# is in backend.json — the permanent link never changes, the tunnel does.
 
 set -u
 cd "$(dirname "$0")"
 
-BACKEND_JSON="client/public/backend.json"
+BACKEND_JSON="pages-redirect/backend.json"
 LOG_DIR="/tmp/deepmt-tunnel"
 mkdir -p "$LOG_DIR"
 CLOUDFLARED_LOG="$LOG_DIR/cloudflared.log"
@@ -30,7 +32,14 @@ PINGGY_LOG="$LOG_DIR/pinggy.log"
 PID_FILE="$LOG_DIR/tunnel.pid"
 PROVIDER_FILE="$LOG_DIR/provider"
 
-RENEW_SECONDS="${RENEW_SECONDS:-82800}"  # 23h default
+# Renew interval: pinggy free tunnels expire fast → 50 min default.
+# cloudflared lasts longer → 23h default. Env RENEW_SECONDS overrides both.
+if [ -z "${RENEW_SECONDS:-}" ]; then
+  case "${2:-pinggy}" in
+    pinggy) RENEW_SECONDS=3000 ;;
+    *) RENEW_SECONDS=82800 ;;
+  esac
+fi
 PORT="${PORT:-3000}"
 
 log() { echo "[tunnel-rotate] $*"; }
@@ -70,7 +79,7 @@ push_backend() {
     log "No backend.json change to push."
     return 0
   fi
-  git commit -m "chore(pages): point frontend at ${url:-local backend}" > /dev/null
+  git commit -m "chore(pages): redirect at ${url:-no target}" > /dev/null
   if git push origin main 2>&1 | tail -n 3; then
     log "Pushed — GitHub Pages will rebuild in ~1 min."
   else
@@ -87,6 +96,7 @@ stop_tunnel() {
     rm -f "$PID_FILE" "$PROVIDER_FILE"
   fi
   pkill -f "cloudflared tunnel --url http://localhost:${PORT}" 2>/dev/null || true
+  pkill -f "a\.pinggy\.io" 2>/dev/null || true
   log "tunnel stopped"
 }
 
@@ -152,32 +162,38 @@ start_pinggy() {
 }
 
 rotate_once() {
-  local provider="${1:-cloudflared}"
+  local provider="${1:-pinggy}"
   ensure_server || return 1
   local url=""
-  if [ "$provider" = "pinggy" ]; then
-    url="$(start_pinggy)" || return 1
-  else
+  if [ "$provider" = "cloudflared" ]; then
     url="$(start_cloudflared)" || {
       log "cloudflared failed, falling back to pinggy…"
       url="$(start_pinggy)" || return 1
     }
+  else
+    url="$(start_pinggy)" || return 1
   fi
   # start_* echo progress lines too — last line is the URL
   url="$(echo "$url" | tail -n 1)"
   write_backend "$url"
   push_backend "$url" || true
-  log "LIVE: Pages frontend → $url (tunnel PID $(cat "$PID_FILE"))"
+  log "LIVE: Pages redirect → $url (tunnel PID $(cat "$PID_FILE"))"
   log "Test: curl $url/api/health"
 }
 
 cmd="${1:-once}"
 case "$cmd" in
   once)
-    rotate_once "${2:-cloudflared}"
+    rotate_once "${2:-pinggy}"
     ;;
   daemon)
-    provider="${2:-cloudflared}"
+    provider="${2:-pinggy}"
+    if [ -z "${RENEW_SECONDS:-}" ]; then
+      case "$provider" in
+        pinggy) RENEW_SECONDS=3000 ;;
+        *) RENEW_SECONDS=82800 ;;
+      esac
+    fi
     log "Daemon mode: renewing tunnel every ${RENEW_SECONDS}s (~$(python3 -c "print(round($RENEW_SECONDS/3600,1))")h)."
     while true; do
       rotate_once "$provider" || log "rotation failed — retrying in 5 min"
