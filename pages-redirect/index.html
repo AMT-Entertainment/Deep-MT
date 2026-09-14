@@ -63,23 +63,37 @@
       // Check the current pinggy site is actually alive before redirecting.
       // NOTE: pinggy free tier answers *browsers* with a caution interstitial
       // ("Make sure you trust this website…") instead of the API payload — even
-      // on /api/health. Any HTTP answer carrying its marker still proves the
-      // tunnel is up, so treat that as live too and redirect; the visitor
-      // clicks through the one-time caution screen and lands in DeepMT.
-      return fetch(url + '/api/health', { cache: 'no-store' })
-        .then(function (r) {
-          if (!r.ok) throw new Error('server answered HTTP ' + r.status);
-          return r.text();
-        })
-        .then(function (t) {
-          var live = false;
-          try { live = JSON.parse(t).status === 'ok'; } catch (e) { /* not JSON — maybe the caution page */ }
-          if (!live && /pinggy\.io|pinggyidentifier|served for free through/i.test(t)) live = true;
-          if (!live) throw new Error('server health check failed');
+      // on /api/health — and that page carries NO CORS headers, so a normal
+      // read fails in real browsers. Strategy:
+      //   1. Try a CORS read: real JSON (status ok) or a readable caution
+      //      page (pinggy markers) both prove the tunnel is up.
+      //   2. If the read is blocked, fall back to an opaque no-cors probe:
+      //      resolving means the tunnel host answered HTTP (redirect — the
+      //      visitor clicks through the one-time caution screen into DeepMT);
+      //      rejecting means it is truly down.
+      function readableCheck() {
+        return fetch(url + '/api/health', { cache: 'no-store' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('server answered HTTP ' + r.status);
+            return r.text();
+          })
+          .then(function (t) {
+            try { if (JSON.parse(t).status === 'ok') return true; } catch (e) { /* not JSON — maybe the caution page */ }
+            if (/pinggy\.io|pinggyidentifier|served for free through/i.test(t)) return true;
+            throw new Error('server health check failed');
+          });
+      }
+      function opaqueCheck() {
+        return fetch(url + '/api/health', { mode: 'no-cors', cache: 'no-store' })
+          .then(function () { return true; });
+      }
+      return readableCheck()
+        .catch(opaqueCheck)
+        .then(function () {
           status.textContent = 'Live — redirecting…';
           location.replace(url + '/');
         })
-        .catch(function (e) { fail('The live server is not answering: ' + e.message, url); });
+        .catch(function (e) { fail('The live server is not answering: ' + (e && e.message || e), url); });
     })
     .catch(function (e) { fail(e.message, null); });
 })();
