@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>DeepMT — connecting…</title>
 <meta name="description" content="DeepMT redirect — forwarding to the live server." />
+<!-- REDIRECT v5: opaque probe + auto-retry + open-anyway fallback -->
 <style>
   :root { color-scheme: light dark; }
   body {
@@ -13,7 +14,7 @@
     background: #F1F4E0; color: #1C1C1C;
   }
   @media (prefers-color-scheme: dark) { body { background: #1C1C1C; color: #F1F4E0; } }
-  .card { text-align: center; padding: 32px; max-width: 420px; }
+  .card { text-align: center; padding: 32px; max-width: 440px; }
   .spin {
     width: 44px; height: 44px; margin: 0 auto 20px; border-radius: 50%;
     border: 4px solid #88B0A8; border-top-color: transparent;
@@ -23,11 +24,14 @@
   h1 { font-size: 20px; margin: 0 0 8px; }
   p { margin: 6px 0; opacity: 0.75; font-size: 14px; }
   p.hint { font-size: 12px; opacity: 0.55; margin-top: 14px; }
+  p.ver { font-size: 11px; opacity: 0.35; margin-top: 18px; }
   a.btn {
-    display: inline-block; margin-top: 16px; padding: 10px 22px; border-radius: 999px;
+    display: inline-block; margin: 8px 6px 0; padding: 10px 22px; border-radius: 999px;
     background: #88B0A8; color: #10201d; font-weight: 600; text-decoration: none;
   }
+  a.btn--ghost { background: transparent; border: 1px solid #88B0A8; color: inherit; }
   .err h1 { color: #b3261e; }
+  .err .spin { display: none; }
   code { font-size: 12px; word-break: break-all; opacity: 0.8; }
 </style>
 </head>
@@ -37,65 +41,100 @@
   <h1>Connecting to DeepMT…</h1>
   <p id="status">Checking the live server, one moment.</p>
   <p class="hint">Note: our free tunnel provider shows a one-time “make sure you trust this website” screen — that’s expected, just click through to reach DeepMT.</p>
+  <p class="ver">redirect v5</p>
 </div>
 <script>
 (function () {
   var card = document.getElementById('card');
   var status = document.getElementById('status');
+  var homeHtml = card.innerHTML;
+  var RETRY_MS = 8000;
+  var retryTimer = null;
 
-  function fail(msg, url) {
+  function showError(url, detail) {
     card.classList.add('err');
     card.innerHTML = '<h1>DeepMT is offline right now</h1>' +
-      '<p>' + msg + '</p>' +
-      (url ? '<p><code>' + url.replace(/</g, '&lt;') + '</code></p>' : '') +
-      '<p><a class="btn" href="" onclick="location.reload();return false;">Try again</a></p>';
+      '<p>' + detail + '</p>' +
+      (url ? '<p><code>' + String(url).replace(/</g, '&lt;') + '</code></p>' : '') +
+      '<p id="retryline">Retrying automatically…</p>' +
+      (url ? '<p><a class="btn" href="' + String(url).replace(/"/g, '&quot;') + '/">Open DeepMT anyway →</a> ' : '<p>') +
+      '<a class="btn btn--ghost" href="" onclick="location.reload();return false;">Retry now</a></p>' +
+      '<p class="hint">If the tunnel just rotated, it is back within a minute — or use “Open DeepMT anyway” to go straight there.</p>' +
+      '<p class="ver">redirect v5</p>';
   }
 
-  fetch('./backend.json', { cache: 'no-store' })
-    .then(function (r) {
-      if (!r.ok) throw new Error('redirect config missing (HTTP ' + r.status + ')');
-      return r.json();
-    })
-    .then(function (cfg) {
-      var url = (cfg && cfg.apiBase ? String(cfg.apiBase) : '').replace(/\/+$/, '');
-      if (!url || !/^https?:\/\//i.test(url)) throw new Error('no live server URL published yet');
-      status.textContent = 'Server found — verifying it answers…';
-      // Check the current pinggy site is actually alive before redirecting.
-      // NOTE: pinggy free tier answers *browsers* with a caution interstitial
-      // ("Make sure you trust this website…") instead of the API payload — even
-      // on /api/health — and that page carries NO CORS headers, so a normal
-      // read fails in real browsers. Strategy:
-      //   1. Try a CORS read: real JSON (status ok) or a readable caution
-      //      page (pinggy markers) both prove the tunnel is up.
-      //   2. If the read is blocked, fall back to an opaque no-cors probe:
-      //      resolving means the tunnel host answered HTTP (redirect — the
-      //      visitor clicks through the one-time caution screen into DeepMT);
-      //      rejecting means it is truly down.
-      function readableCheck() {
-        return fetch(url + '/api/health', { cache: 'no-store' })
-          .then(function (r) {
-            if (!r.ok) throw new Error('server answered HTTP ' + r.status);
-            return r.text();
-          })
-          .then(function (t) {
-            try { if (JSON.parse(t).status === 'ok') return true; } catch (e) { /* not JSON — maybe the caution page */ }
-            if (/pinggy\.io|pinggyidentifier|served for free through/i.test(t)) return true;
-            throw new Error('server health check failed');
-          });
-      }
-      function opaqueCheck() {
-        return fetch(url + '/api/health', { mode: 'no-cors', cache: 'no-store' })
-          .then(function () { return true; });
-      }
-      return readableCheck()
-        .catch(opaqueCheck)
-        .then(function () {
+  function scheduleRetry(url, detail) {
+    showError(url, detail);
+    clearTimeout(retryTimer);
+    var left = Math.round(RETRY_MS / 1000);
+    var line = document.getElementById('retryline');
+    var tick = setInterval(function () {
+      left -= 1;
+      if (left <= 0) { clearInterval(tick); boot(); return; }
+      if (line) line.textContent = 'Retrying automatically in ' + left + 's…';
+    }, 1000);
+  }
+
+  // Liveness probe. Pinggy free tier answers *browsers* with a caution
+  // interstitial ("Make sure you trust this website…") instead of the API
+  // payload — even on /api/health — and that page carries NO CORS headers, so
+  // a normal read fails in real browsers even when the tunnel is live.
+  //   1. Try a CORS read: real JSON (status ok) or a readable caution page
+  //      (pinggy markers) both prove the tunnel is up.
+  //   2. If the read is blocked, fall back to an opaque no-cors probe:
+  //      resolving means the tunnel host answered HTTP (redirect — the visitor
+  //      clicks through the one-time caution screen into DeepMT).
+  // Only a true network failure (both reject) counts as offline.
+  function probe(url) {
+    function readableCheck() {
+      return fetch(url + '/api/health', { cache: 'no-store' })
+        .then(function (r) {
+          if (!r.ok) throw new Error('server answered HTTP ' + r.status);
+          return r.text();
+        })
+        .then(function (t) {
+          try { if (JSON.parse(t).status === 'ok') return true; } catch (e) { /* not JSON — maybe the caution page */ }
+          if (/pinggy\.io|pinggyidentifier|served for free through/i.test(t)) return true;
+          throw new Error('server health check failed');
+        });
+    }
+    function opaqueCheck() {
+      return fetch(url + '/api/health', { mode: 'no-cors', cache: 'no-store' })
+        .then(function () { return true; });
+    }
+    return readableCheck().catch(opaqueCheck);
+  }
+
+  function boot() {
+    clearTimeout(retryTimer);
+    card.classList.remove('err');
+    card.innerHTML = homeHtml;
+    status = document.getElementById('status');
+    // Cache-bust the config so a stale CDN/browser copy can never pin us to
+    // a dead tunnel URL after a rotation.
+    fetch('./backend.json?v=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('redirect config missing (HTTP ' + r.status + ')');
+        return r.json();
+      })
+      .then(function (cfg) {
+        var url = (cfg && cfg.apiBase ? String(cfg.apiBase) : '').replace(/\/+$/, '');
+        if (!url || !/^https?:\/\//i.test(url)) throw new Error('no live server URL published yet');
+        status.textContent = 'Server found — verifying it answers…';
+        return probe(url).then(function () {
+          clearTimeout(retryTimer);
           status.textContent = 'Live — redirecting…';
           location.replace(url + '/');
-        })
-        .catch(function (e) { fail('The live server is not answering: ' + (e && e.message || e), url); });
-    })
-    .catch(function (e) { fail(e.message, null); });
+        }, function () {
+          scheduleRetry(url, 'The live server is not answering yet.');
+        });
+      })
+      .catch(function (e) {
+        scheduleRetry(null, (e && e.message) || 'Could not load the redirect config.');
+      });
+  }
+
+  boot();
 })();
 </script>
 </body>
