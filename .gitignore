@@ -17,3 +17,5 @@ tools-output/
 *.log
 .DS_Store
 /tmp/
+*.iso
+*.qcow2
