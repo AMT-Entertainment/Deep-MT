@@ -22,6 +22,7 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   h1 { font-size: 20px; margin: 0 0 8px; }
   p { margin: 6px 0; opacity: 0.75; font-size: 14px; }
+  p.hint { font-size: 12px; opacity: 0.55; margin-top: 14px; }
   a.btn {
     display: inline-block; margin-top: 16px; padding: 10px 22px; border-radius: 999px;
     background: #88B0A8; color: #10201d; font-weight: 600; text-decoration: none;
@@ -35,6 +36,7 @@
   <div class="spin" aria-hidden="true"></div>
   <h1>Connecting to DeepMT…</h1>
   <p id="status">Checking the live server, one moment.</p>
+  <p class="hint">Note: our free tunnel provider shows a one-time “make sure you trust this website” screen — that’s expected, just click through to reach DeepMT.</p>
 </div>
 <script>
 (function () {
@@ -59,13 +61,21 @@
       if (!url || !/^https?:\/\//i.test(url)) throw new Error('no live server URL published yet');
       status.textContent = 'Server found — verifying it answers…';
       // Check the current pinggy site is actually alive before redirecting.
+      // NOTE: pinggy free tier answers *browsers* with a caution interstitial
+      // ("Make sure you trust this website…") instead of the API payload — even
+      // on /api/health. Any HTTP answer carrying its marker still proves the
+      // tunnel is up, so treat that as live too and redirect; the visitor
+      // clicks through the one-time caution screen and lands in DeepMT.
       return fetch(url + '/api/health', { cache: 'no-store' })
         .then(function (r) {
           if (!r.ok) throw new Error('server answered HTTP ' + r.status);
-          return r.json();
+          return r.text();
         })
-        .then(function (h) {
-          if (!h || h.status !== 'ok') throw new Error('server health check failed');
+        .then(function (t) {
+          var live = false;
+          try { live = JSON.parse(t).status === 'ok'; } catch (e) { /* not JSON — maybe the caution page */ }
+          if (!live && /pinggy\.io|pinggyidentifier|served for free through/i.test(t)) live = true;
+          if (!live) throw new Error('server health check failed');
           status.textContent = 'Live — redirecting…';
           location.replace(url + '/');
         })
