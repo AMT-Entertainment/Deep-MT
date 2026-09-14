@@ -1,0 +1,27 @@
+{
+  "name": "deepmt-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DeepMT Desktop — Chat + [MT] host agent + TAKE OVER computer-use, all local",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build:inputctl": "swiftc -O -o tools/inputctl tools/inputctl.swift",
+    "postinstall": "if [ -x tools/inputctl ]; then echo 'inputctl ready'; else swiftc -O -o tools/inputctl tools/inputctl.swift; fi"
+  },
+  "license": "UNLICENSED",
+  "build": {
+    "appId": "ai.deepmt.desktop",
+    "productName": "DeepMT Desktop",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "tools/**"
+    ]
+  },
+  "devDependencies": {
+    "electron": "^43.3.0"
+  }
+}

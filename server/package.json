@@ -1,0 +1,30 @@
+{
+  "name": "deepmt-server",
+  "version": "2.0.0",
+  "private": true,
+  "description": "DeepMT backend — auth, sessions, and SSE streaming gateway to the TurboFieldfare engine",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "mcp": "node mcp-server.js",
+    "console": "node src/console.js",
+    "console:open": "node src/open-console.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.2.0",
+    "pdf-parse": "^2.4.5",
+    "pdfkit": "^0.19.1",
+    "qrcode": "^1.5.4",
+    "zod": "^4.4.3"
+  }
+}

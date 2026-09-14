@@ -1,0 +1,6 @@
+node_modules/
+dist/
+boot.log
+boot.pid
+tools/inputctl
+.DS_Store

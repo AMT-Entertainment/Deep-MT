@@ -1,0 +1,7 @@
+torch==2.4.1
+diffusers>=0.27
+transformers>=4.40
+accelerate>=0.30
+safetensors>=0.4
+pillow>=10
+flask>=3

@@ -1,0 +1,89 @@
+/* ---- Auth modal ---- */
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--overlay);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fade-in 0.25s ease;
+}
+
+.auth-modal {
+  width: min(420px, 100%);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 34px;
+  box-shadow: var(--shadow-soft);
+  animation: modal-in 0.35s var(--ease-out-quad);
+  position: relative;
+}
+
+.auth-modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 1.15rem;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.auth-modal__close:hover {
+  background: var(--teal-soft);
+  color: var(--text);
+}
+
+.auth-modal h2 {
+  font-size: 1.65rem;
+  margin-bottom: 6px;
+}
+
+.auth-modal__sub {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  margin-bottom: 26px;
+}
+
+.auth-modal form {
+  text-align: left;
+}
+
+.auth-modal__error {
+  background: rgba(200, 80, 70, 0.1);
+  border: 1px solid rgba(200, 80, 70, 0.35);
+  color: #b3544a;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  margin-bottom: 18px;
+}
+
+.auth-modal__switch {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.auth-modal__switch button {
+  color: var(--teal-deep);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.auth-modal__switch button:hover {
+  text-decoration: underline;
+}
+
+.auth-modal__submit {
+  width: 100%;
+}

@@ -1,0 +1,294 @@
+/* ============================================================
+   DeepMT Design System — tokens, reset & base
+   Brand: AMT Entertainment | UI Version 2.0
+   ============================================================ */
+
+:root {
+  /* Brand palette */
+  --teal: #88B0A8;
+  --teal-deep: #6f9a91;
+  --teal-soft: rgba(136, 176, 168, 0.14);
+  --cream: #F1F4E0;
+  --charcoal: #1C1C1C;
+  --border-light: #D0DCD8;
+  --border-dark: #333333;
+
+  /* Semantic (light) */
+  --bg: var(--cream);
+  --bg-elevated: #fafcf1;
+  --text: var(--charcoal);
+  --text-muted: #5c6b66;
+  --border: var(--border-light);
+  --line: var(--border-light);
+  --card-bg: rgba(255, 255, 255, 0.42);
+  --input-bg: rgba(255, 255, 255, 0.55);
+  --overlay: rgba(28, 28, 28, 0.45);
+  --danger: #c0564f;
+  --success: #5e9276;
+
+  /* Typography */
+  --font-display: 'Playfair Display', 'Georgia', serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Fira Code', monospace;
+
+  /* Geometry */
+  --radius: 8px;
+  --radius-lg: 14px;
+  --card-pad: 28px;
+  --nav-h: 68px;
+  --nav-h-mobile: 56px;
+  --composer-h: 88px;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --shadow-soft: 0 1px 2px rgba(28, 28, 28, 0.04), 0 8px 28px rgba(28, 28, 28, 0.05);
+
+  /* Motion */
+  --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --thinking-curve: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+[data-theme='dark'] {
+  --bg: var(--charcoal);
+  --bg-elevated: #232323;
+  --text: #ececec;
+  --text-muted: #9aa8a3;
+  --border: var(--border-dark);
+  --line: var(--border-dark);
+  --card-bg: rgba(255, 255, 255, 0.03);
+  --input-bg: rgba(255, 255, 255, 0.045);
+  --overlay: rgba(0, 0, 0, 0.55);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Prevent iOS text zoom on focus, keep layout stable on mobile */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.35s ease, color 0.35s ease;
+  /* Prevent horizontal scroll on mobile, allow safe-area insets */
+  overflow-x: hidden;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Mobile: respect notch / home indicator */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}
+
+::selection {
+  background: var(--teal);
+  color: #fff;
+}
+
+a {
+  color: var(--teal-deep);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input, textarea {
+  font-family: var(--font-body);
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---- Shared components ---- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: 1.5px solid transparent;
+  transition: transform 0.15s var(--ease-out-quad), box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: var(--teal);
+  color: #13201d;
+}
+
+.btn-primary:hover {
+  background: var(--teal-deep);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(136, 176, 168, 0.35);
+  text-decoration: none;
+}
+
+.btn-outline {
+  border-color: var(--teal);
+  color: var(--teal-deep);
+  background: transparent;
+}
+
+.btn-outline:hover {
+  background: var(--teal-soft);
+  text-decoration: none;
+}
+
+.btn-ghost {
+  color: var(--text-muted);
+  padding: 8px 14px;
+}
+
+.btn-ghost:hover {
+  color: var(--text);
+  background: var(--teal-soft);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-lg {
+  padding: 13px 28px;
+  font-size: 1.02rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--card-pad);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.field label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.field input {
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--input-bg);
+  font-size: 0.97rem;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.field input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-soft), 0 0 14px rgba(136, 176, 168, 0.25);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+/* ---- Mobile base: larger tap targets, safe areas, performance ---- */
+@media (max-width: 640px) {
+  :root {
+    --card-pad: 18px;
+    --nav-h: var(--nav-h-mobile);
+  }
+  html { font-size: 15px; }
+  /* Ensure buttons meet 44px Apple HIG minimum on mobile */
+  .btn { min-height: 44px; padding: 10px 18px; }
+  .btn-lg { min-height: 48px; }
+}
+
+/* Improve tap responsiveness everywhere */
+@media (pointer: coarse) {
+  * { -webkit-tap-highlight-color: rgba(136,176,168,0.22); }
+  button, a, [role="button"] { touch-action: manipulation; }
+  /* Disable heavy hover effects that feel laggy on touch */
+  .feature:hover, .fleet__card:hover, .arch-flow__node:hover { transform: none; }
+}
+
+/* Reduce motion for users who prefer it, also speeds up perceived performance */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .cursor-glow, .hero__grain, .demo::before, .orb::after { display: none !important; }
+}

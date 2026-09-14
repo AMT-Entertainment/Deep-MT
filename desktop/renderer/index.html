@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'">
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>DeepMT Desktop</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="nav">
+    <a class="nav__brand" href="#">
+      <img class="nav__logo" src="favicon.png" alt="DeepMT" />
+      DeepMT
+    </a>
+
+    <div class="nav__links">
+      <button class="nav__link tab" data-tab="chat">💬 Chat</button>
+      <button class="nav__link tab" data-tab="mt">🛠 [MT] Host Agent</button>
+      <button class="nav__link tab" data-tab="take">👁 TAKE OVER</button>
+
+      <span class="nav__divider"></span>
+
+      <span class="engine-pill" id="engines"><span class="engine-dot"></span><span id="oll-pill">ollama · checking…</span></span>
+
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">☾</button>
+      <button class="btn btn-primary btn-stop" id="globalStop" title="Stop everything">■ Stop</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- ============ CHAT ============ -->
+    <section class="panel is-active" id="tab-chat">
+      <div class="chat-scroll" id="chatScroll">
+        <div class="chat-empty" id="chatEmpty">
+          <h1>DeepMT Desktop</h1>
+          <p>Chat with <em>URANUS</em> — running 100% on this Mac.</p>
+        </div>
+      </div>
+      <form class="composer" id="composer">
+        <input id="chatInput" type="text" class="demo__input" autocomplete="off" maxlength="300" placeholder="Message URANUS…" aria-label="Message URANUS"/>
+        <button type="submit" class="btn btn-primary demo__send" id="chatSend">→</button>
+      </form>
+    </section>
+
+    <!-- ============ [MT] HOST AGENT ============ -->
+    <section class="panel" id="tab-mt">
+      <div class="agent-head">
+        <h2>Host Agent <span class="badge">[MT]</span></h2>
+        <p class="hint">
+          URANUS gets real shell &amp; file access on <b>this Mac</b>. Every action is
+          shown here and must be approved before it runs.
+        </p>
+        <div class="row">
+          <input type="text" id="mtGoal" class="goal-input" placeholder="Goal — e.g. “create ~/DeepMT-Workspace/notes.md, then list its parent dir”" />
+          <button class="btn btn-primary" id="mtStart">Run [MT]</button>
+          <label class="check"><input type="checkbox" id="mtAuto" /> auto-approve</label>
+          <button class="btn btn-outline danger" id="mtStop">■ Stop</button>
+        </div>
+      </div>
+      <div id="mtLog" class="agent-log mono"></div>
+      <div id="mtApproval" class="approval-bar mono" hidden>
+        <span id="mtApprovalTx"></span>
+        <button class="btn btn-primary" id="mtYes">Allow</button>
+        <button class="btn btn-outline danger" id="mtNo">Block</button>
+      </div>
+    </section>
+
+    <!-- ============ TAKE OVER ============ -->
+    <section class="panel" id="tab-take">
+      <div class="agent-head">
+        <h1>TAKE OVER <span class="badge">vision</span></h1>
+        <p class="hint">
+          A vision model (<span class="mono" id="visionModel">llava</span>) looks at the screen and
+          drives your mouse &amp; keyboard to achieve a goal. Each action is previewed and
+          must be approved.
+        </p>
+        <div class="row">
+          <input type="text" id="takeGoal" class="goal-input" placeholder="Task — e.g. “open Calculator, type 7 + 9”" />
+          <label class="check"><input type="checkbox" id="takeAuto" /> auto-approve</label>
+          <button class="btn btn-primary" id="takeStart">Start</button>
+          <button class="btn btn-outline danger" id="takeStop">■ Stop</button>
+        </div>
+      </div>
+      <div class="take-grid">
+        <div class="frame-wrap">
+          <img id="takeFrame" alt="screen" class="frame" />
+        </div>
+        <div id="takeLog" class="agent-log mono"></div>
+      </div>
+      <div id="takeApproval" class="approval-bar mono" hidden>
+        <span id="takeApprovalTx"></span>
+        <button class="btn btn-primary" id="takeYes">Allow</button>
+        <button class="btn btn-outline danger" id="takeNo">Block</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <span class="statusbar__item" id="statusLine">ready</span>
+    <span class="statusbar__item statusbar__item--right" id="statusMeta"></span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
